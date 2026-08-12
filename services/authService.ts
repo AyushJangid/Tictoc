@@ -36,8 +36,11 @@ export async function signInWithCredentials(
 }
 
 export async function signOutUser(): Promise<void> {
-  await nextAuthSignOut({ redirect: false });
-  if (typeof window !== "undefined") {
+  try {
+    await nextAuthSignOut({ redirect: false });
+  } catch {
+    // Ignore errors — we always redirect client-side below
+  } finally {
     window.location.href = APP_ROUTES.LOGIN;
   }
 }

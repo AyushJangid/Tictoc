@@ -41,9 +41,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
-    async redirect({ url }) {
+    async redirect({ url, baseUrl }) {
+      // If url is relative (starts with /), keep it relative
       if (url.startsWith("/")) return url;
-      return url;
+      // If url is on the same origin as the deployment, allow it
+      try {
+        const parsedUrl = new URL(url);
+        const parsedBase = new URL(baseUrl);
+        if (parsedUrl.origin === parsedBase.origin) return url;
+        // Otherwise, return just the pathname to avoid cross-origin redirects
+        // (e.g., prevents redirect to localhost when NEXTAUTH_URL is misconfigured)
+        return parsedUrl.pathname || "/";
+      } catch {
+        return "/";
+      }
     },
     async jwt({ token, user }) {
       if (user) {
