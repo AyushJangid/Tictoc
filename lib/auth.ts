@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { DUMMY_CREDENTIALS } from "@/constants";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -40,6 +41,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/login",
   },
   callbacks: {
+    async redirect({ url }) {
+      if (url.startsWith("/")) return url;
+      return url;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
