@@ -1,4 +1,3 @@
-import { signIn as nextAuthSignIn } from "next-auth/react";
 import { APP_ROUTES } from "@/constants";
 
 interface SignInCredentials {
@@ -14,22 +13,35 @@ interface SignInResult {
 export async function signInWithCredentials(
   credentials: SignInCredentials
 ): Promise<SignInResult> {
+  // Bypass next-auth/react's signIn to avoid its internal URL resolution
+  // which can construct absolute URLs pointing to localhost:3000.
+  // Instead, POST directly to the credentials callback using relative URLs.
   try {
-    const result = await nextAuthSignIn("credentials", {
-      email: credentials.email,
-      password: credentials.password,
-      redirect: false,
+    // Get CSRF token
+    const csrfRes = await fetch("/api/auth/csrf");
+    const { csrfToken } = await csrfRes.json();
+
+    // POST to the credentials callback endpoint
+    const res = await fetch("/api/auth/callback/credentials", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        csrfToken,
+        email: credentials.email,
+        password: credentials.password,
+      }),
+      redirect: "follow",
     });
 
-    if (result?.error) {
-      return { success: false, error: "Invalid email or password" };
-    }
+    // Check if the session was actually created
+    const sessionRes = await fetch("/api/auth/session");
+    const session = await sessionRes.json();
 
-    if (result?.ok) {
+    if (session?.user) {
       return { success: true };
     }
 
-    return { success: false, error: "An unexpected error occurred" };
+    return { success: false, error: "Invalid email or password" };
   } catch {
     return { success: false, error: "An unexpected error occurred" };
   }
@@ -57,4 +69,3 @@ export async function signOutUser(): Promise<void> {
   // Always redirect to login on the current domain
   window.location.href = APP_ROUTES.LOGIN;
 }
-
