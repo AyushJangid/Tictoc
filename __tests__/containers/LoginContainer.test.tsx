@@ -17,18 +17,26 @@ jest.mock("@/services/authService", () => ({
   signInWithCredentials: jest.fn(),
 }));
 
-// Mock next/navigation
-const mockPush = jest.fn();
-const mockRefresh = jest.fn();
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
-}));
-
 import { signInWithCredentials } from "@/services/authService";
 
 const mockedSignIn = signInWithCredentials as jest.MockedFunction<
   typeof signInWithCredentials
 >;
+
+// Mock window.location.href
+const originalLocation = window.location;
+beforeAll(() => {
+  Object.defineProperty(window, "location", {
+    writable: true,
+    value: { ...originalLocation, href: "" },
+  });
+});
+afterAll(() => {
+  Object.defineProperty(window, "location", {
+    writable: true,
+    value: originalLocation,
+  });
+});
 
 function createTestStore() {
   return configureStore({
@@ -44,6 +52,7 @@ function renderWithStore(component: React.ReactElement) {
 describe("LoginContainer", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    window.location.href = "";
   });
 
   it("renders the login form", () => {
@@ -63,7 +72,7 @@ describe("LoginContainer", () => {
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/dashboard");
+      expect(window.location.href).toBe("/dashboard");
     });
   });
 

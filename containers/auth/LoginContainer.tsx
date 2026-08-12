@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginForm } from "@/components/auth/LoginForm";
@@ -12,7 +11,6 @@ import { setLoading } from "@/store/slices/authSlice";
 import { APP_ROUTES } from "@/constants";
 
 export function LoginContainer() {
-  const router = useRouter();
   const dispatch = useAppDispatch();
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,8 +35,10 @@ export function LoginContainer() {
     });
 
     if (result.success) {
-      router.push(APP_ROUTES.DASHBOARD);
-      router.refresh();
+      // Use full page navigation to ensure newly-set session cookies
+      // are sent with the request (router.push does a soft navigation
+      // which may not pick up the new cookies on Vercel)
+      window.location.href = APP_ROUTES.DASHBOARD;
     } else {
       setAuthError(result.error ?? "Login failed. Please try again.");
       dispatch(setLoading(false));

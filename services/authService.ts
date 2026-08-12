@@ -21,8 +21,11 @@ export async function signInWithCredentials(
     const csrfRes = await fetch("/api/auth/csrf");
     const { csrfToken } = await csrfRes.json();
 
-    // POST to the credentials callback endpoint
-    const res = await fetch("/api/auth/callback/credentials", {
+    // POST to the credentials callback endpoint.
+    // Use redirect:"manual" to prevent following NextAuth's redirect
+    // (which may point to localhost:3000). The browser still processes
+    // Set-Cookie headers from the 302 response.
+    await fetch("/api/auth/callback/credentials", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -30,10 +33,10 @@ export async function signInWithCredentials(
         email: credentials.email,
         password: credentials.password,
       }),
-      redirect: "follow",
+      redirect: "manual",
     });
 
-    // Check if the session was actually created
+    // Verify the session was actually created
     const sessionRes = await fetch("/api/auth/session");
     const session = await sessionRes.json();
 
