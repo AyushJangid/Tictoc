@@ -9,12 +9,18 @@ export default auth((req) => {
   const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
   const isOnLogin = nextUrl.pathname.startsWith("/login");
 
+  // Build redirect base from actual request headers to avoid
+  // NextAuth resolving the URL to localhost via NEXTAUTH_URL
+  const proto = req.headers.get("x-forwarded-proto") ?? nextUrl.protocol.replace(":", "");
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? nextUrl.host;
+  const origin = `${proto}://${host}`;
+
   if (isOnDashboard && !isLoggedIn) {
-    return NextResponse.redirect(new URL(APP_ROUTES.LOGIN, nextUrl));
+    return NextResponse.redirect(new URL(APP_ROUTES.LOGIN, origin));
   }
 
   if (isOnLogin && isLoggedIn) {
-    return NextResponse.redirect(new URL(APP_ROUTES.DASHBOARD, nextUrl));
+    return NextResponse.redirect(new URL(APP_ROUTES.DASHBOARD, origin));
   }
 
   return NextResponse.next();
